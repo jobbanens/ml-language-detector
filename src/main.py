@@ -56,31 +56,6 @@ def process_files(n):
         with codecs.open('../assets/json/' + splitext(file)[0] + '_' + str(n) + '.json', 'w+', 'utf-8') as f:
             f.write(json_object)
 
-#process_files(2)
-#process_files(3)
-
-input = "Ciao sono una bambina con un pezzo di formaggio"
-bigrams_input = make_ngrams(input, 2)
-trigrams_input = make_ngrams(input, 3)
-
-bigrams_nld = make_ngrams_from_file('../assets/raw/nld.txt', 2)
-trigrams_nld = make_ngrams_from_file('../assets/raw/nld.txt', 3)
-
-bigrams_eng = make_ngrams_from_file('../assets/raw/eng.txt', 2)
-trigrams_eng = make_ngrams_from_file('../assets/raw/eng.txt', 3)
-
-bigrams_ger = make_ngrams_from_file('../assets/raw/ger.txt', 2)
-trigrams_ger = make_ngrams_from_file('../assets/raw/ger.txt', 3)
-
-bigrams_fra = make_ngrams_from_file('../assets/raw/fra.txt', 2)
-trigrams_fra = make_ngrams_from_file('../assets/raw/fra.txt', 3)
-
-bigrams_ita = make_ngrams_from_file('../assets/raw/ita.txt', 2)
-trigrams_ita = make_ngrams_from_file('../assets/raw/ita.txt', 3)
-
-bigrams_cat = make_ngrams_from_file('../assets/raw/cat.txt', 2)
-trigrams_cat = make_ngrams_from_file('../assets/raw/cat.txt', 3)
-
 def calculate_map(ngram1, ngrams2):
     overlap = set(ngram1.keys()) & set(ngrams2.keys())
     total_overlap_count = sum([min(ngram1[g], ngrams2[g]) for g in overlap])
@@ -91,41 +66,29 @@ def calculate_map(ngram1, ngrams2):
     map = (total_overlap_count + 1) / (total_bigrams1_count + len(ngram1.keys()))
     return map
 
-score_bigrams_nld = calculate_map(bigrams_input, bigrams_nld)
-score_trigrams_nld = calculate_map(trigrams_input, trigrams_nld)
-total_score_nld = score_bigrams_nld + score_trigrams_nld
+input = "Ciao sono una bambina con un pezzo di formaggio"
+bigrams_input = make_ngrams(input, 2)
+trigrams_input = make_ngrams(input, 3)
 
-score_bigrams_eng = calculate_map(bigrams_input, bigrams_eng)
-score_trigrams_eng = calculate_map(trigrams_input, trigrams_eng)
-total_score_eng = score_bigrams_eng + score_trigrams_eng
-
-score_bigrams_ger = calculate_map(bigrams_input, bigrams_ger)
-score_trigrams_ger = calculate_map(trigrams_input, trigrams_ger)
-total_score_ger = score_bigrams_ger + score_trigrams_ger
-
-score_bigrams_fra = calculate_map(bigrams_input, bigrams_fra)
-score_trigrams_fra = calculate_map(trigrams_input, trigrams_fra)
-total_score_fra = score_bigrams_fra + score_trigrams_fra
-
-score_bigrams_ita = calculate_map(bigrams_input, bigrams_ita)
-score_trigrams_ita = calculate_map(trigrams_input, trigrams_ita)
-total_score_ita = score_bigrams_ita + score_trigrams_ita
-
-score_bigrams_cat = calculate_map(bigrams_input, bigrams_cat)
-score_trigrams_cat = calculate_map(trigrams_input, trigrams_cat)
-total_score_cat = score_bigrams_cat + score_trigrams_cat
-
-scores = {
-    'nld': total_score_nld,
-    'eng': total_score_eng,
-    'ger': total_score_ger,
-    'fra': total_score_fra,
-    'ita': total_score_ita,
-    'cat': total_score_cat,
+languages = {
+    'nld': 'nld.txt',
+    'eng': 'eng.txt',
+    'ger': 'ger.txt',
+    'fra': 'fra.txt',
+    'ita': 'ita.txt',
+    'cat': 'cat.txt',
 }
+
+scores = {}
+for lang, filename in languages.items():
+    bigrams = make_ngrams_from_file(f"../assets/raw/{filename}", 2)
+    trigrams = make_ngrams_from_file(f"../assets/raw/{filename}", 3)
+    score_bigrams = calculate_map(bigrams_input, bigrams)
+    score_trigrams = calculate_map(trigrams_input, trigrams)
+    scores[lang] = score_bigrams + score_trigrams / 2
 
 sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
-print("De taal " + str(sorted_scores[0][0]) + " is gedetecteerd: " + str(sorted_scores[0][1]))
-for score in sorted_scores[1:]:
-    print(f"{score[0]}: {score[1]}")
+print(f"De taal {sorted_scores[0][0]} is gedetecteerd: {sorted_scores[0][1]}")
+for lang, score in sorted_scores[1:]:
+    print(f"{lang}: {score}")
