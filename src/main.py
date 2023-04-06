@@ -56,19 +56,17 @@ def process_files(n):
         with codecs.open('../assets/json/' + splitext(file)[0] + '_' + str(n) + '.json', 'w+', 'utf-8') as f:
             f.write(json_object)
 
-def calculate_map(ngrams_input, ngrams_lang):
+def calculate_score(ngrams_input, ngrams_lang):
     overlap = set(ngrams_input.keys()) & set(ngrams_lang.keys())
-    total_overlap_count = sum([((ngrams_input[ngram] + ngrams_lang[ngram]) / 2) for ngram in overlap])
+    #total_overlap_count = sum([((ngrams_input[ngram] + ngrams_lang[ngram]) / 2) for ngram in overlap])
     total_ngrams_count_input = sum(ngrams_input.values())
     total_ngrams_count_lang = sum(ngrams_lang.values())
 
-    factor = total_ngrams_count_input / total_ngrams_count_lang * 100
-
     # Calculate the maximum a posteriori (MAP)
-    map = (total_overlap_count + 1) / (total_ngrams_count_input + len(ngrams_input.keys())) * factor
-    return map
+    score = sum([ngrams_input[ngram] for ngram in overlap]) / total_ngrams_count_input * sum([ngrams_lang[ngram] for ngram in overlap]) / total_ngrams_count_lang
+    return score
 
-input = "Bonjour mon nome est c'est la vie et croissant des ridicule"
+input = "Today I feel like doing nothing"
 bigrams_input = make_ngrams(input, 2)
 trigrams_input = make_ngrams(input, 3)
 
@@ -85,8 +83,8 @@ scores = {}
 for lang, filename in languages.items():
     bigrams = make_ngrams_from_file(f"../assets/raw/{filename}", 2)
     trigrams = make_ngrams_from_file(f"../assets/raw/{filename}", 3)
-    score_bigrams = calculate_map(bigrams_input, bigrams)
-    score_trigrams = calculate_map(trigrams_input, trigrams)
+    score_bigrams = calculate_score(bigrams_input, bigrams)
+    score_trigrams = calculate_score(trigrams_input, trigrams)
     scores[lang] = score_trigrams
 
 sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
