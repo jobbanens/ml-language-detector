@@ -9,6 +9,9 @@ def preprocessing(src):
     with io.open(src, 'r', encoding='utf-8', errors='ignore') as temp:
         return re.sub("[\n]+", ' ', (re.sub("[^A-Za-zÀ-Ÿ\n_ ']+", '', temp.read()).lower()))
 
+def count_len(src):
+    return len(preprocessing(src))
+
 def make_ngrams_from_file(src, n):
     # Preprocess the source file
     src = preprocessing(src)
@@ -56,17 +59,20 @@ def process_files(n):
         with codecs.open('../assets/json/' + splitext(file)[0] + '_' + str(n) + '.json', 'w+', 'utf-8') as f:
             f.write(json_object)
 
-def calculate_score(ngrams_input, ngrams_lang):
+def calculate_score(ngrams_input, ngrams_lang, corpus_len, lang_len):
     overlap = set(ngrams_input.keys()) & set(ngrams_lang.keys())
-    #total_overlap_count = sum([((ngrams_input[ngram] + ngrams_lang[ngram]) / 2) for ngram in overlap])
-    total_ngrams_count_input = sum(ngrams_input.values())
-    total_ngrams_count_lang = sum(ngrams_lang.values())
+    overlap_freq_input = sum([ngrams_input[ngram] for ngram in overlap])
+    overlap_freq_lang = sum([ngrams_lang[ngram] for ngram in overlap])
+    total_freq_input = sum(ngrams_input.values())
+    total_freq_lang = sum(ngrams_lang.values())
+
+    factor = 1 - (lang_len / corpus_len)
 
     # Calculate the maximum a posteriori (MAP)
-    score = sum([ngrams_input[ngram] for ngram in overlap]) / total_ngrams_count_input * sum([ngrams_lang[ngram] for ngram in overlap]) / total_ngrams_count_lang
+    score = overlap_freq_input / total_freq_input * overlap_freq_lang / total_freq_lang * factor
     return score
 
-input = "Today I feel like doing nothing"
+input = "alors nous y sommes finalement arrivés"
 bigrams_input = make_ngrams(input, 2)
 trigrams_input = make_ngrams(input, 3)
 
@@ -79,13 +85,17 @@ languages = {
     'cat': 'cat.txt',
 }
 
+corpus_len = 0
+for lang, filename in languages.items():
+    corpus_len += count_len(f"../assets/raw/{filename}")
+
 scores = {}
 for lang, filename in languages.items():
     bigrams = make_ngrams_from_file(f"../assets/raw/{filename}", 2)
     trigrams = make_ngrams_from_file(f"../assets/raw/{filename}", 3)
-    score_bigrams = calculate_score(bigrams_input, bigrams)
-    score_trigrams = calculate_score(trigrams_input, trigrams)
-    scores[lang] = score_trigrams
+    score_bigrams = calculate_score(bigrams_input, bigrams, corpus_len, count_len(f"../assets/raw/{filename}"))
+    score_trigrams = calculate_score(trigrams_input, trigrams, corpus_len, count_len(f"../assets/raw/{filename}"))
+    scores[lang] = score_bigrams + score_trigrams / 2
 
 sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
