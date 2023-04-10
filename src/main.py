@@ -87,6 +87,7 @@ def calculate_score(ngrams_input, ngrams_lang, corpus_len, lang_len):
     return score
 
 
+# Optional parameter that defines if probability should be dumped in json or not.
 def apply_laplace_smoothing(language, file=0):
     V = calculate_vocabulary_size('../assets/raw/nld.txt')
     with open('../assets/json/' + language + '_3.json', 'r') as f:
@@ -141,7 +142,6 @@ def detect_language(input_text):
     return sorted(language_probabilities.items(), key=lambda x: x[1], reverse=True)
 
 
-
 def calculate(text):
     bigrams_input = make_ngrams(text, 2)
     trigrams_input = make_ngrams(text, 3)
@@ -164,7 +164,8 @@ def calculate(text):
 
     sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
-    print(f"De taal {sorted_scores[0][0]} is gedetecteerd: {sorted_scores[0][1]} (bi: {score_bigrams} + tri: {score_trigrams}")
+    print(
+        f"De taal {sorted_scores[0][0]} is gedetecteerd: {sorted_scores[0][1]} (bi: {score_bigrams} + tri: {score_trigrams}")
     for lang, score in sorted_scores[1:]:
         for a in scores_list:
             if lang in a:
