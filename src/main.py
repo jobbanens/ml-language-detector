@@ -97,6 +97,7 @@ def calculate(text):
         corpus_len += count_len(f"../assets/raw/{filename}")
 
     scores = {}
+    scores_list = []
     for lang, filename in languages.items():
         bigrams = make_ngrams_from_file(f"../assets/raw/{filename}", 2)
         trigrams = make_ngrams_from_file(f"../assets/raw/{filename}", 3)
@@ -104,13 +105,16 @@ def calculate(text):
                                         count_len(f"../assets/raw/{filename}"))
         score_trigrams = calculate_score(trigrams_input, trigrams, corpus_len,
                                          count_len(f"../assets/raw/{filename}"))
-        scores[lang] = score_bigrams + score_trigrams / 2
+        scores[lang] = (score_bigrams + score_trigrams) / 2
+        scores_list.append([lang, score_bigrams, score_trigrams, (score_bigrams + score_trigrams) / 2])
 
     sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
-    print(f"De taal {sorted_scores[0][0]} is gedetecteerd: {sorted_scores[0][1]}")
+    print(f"De taal {sorted_scores[0][0]} is gedetecteerd: {sorted_scores[0][1]} (bi: {score_bigrams} + tri: {score_trigrams}")
     for lang, score in sorted_scores[1:]:
-        print(f"{lang}: {score}")
+        for a in scores_list:
+            if lang in a:
+                print(f"{lang}: {score} (bi: {a[1]} + tri: {a[2]}")
 
 def process_input():
     print("Hoe wil je het algoritme testen?")
