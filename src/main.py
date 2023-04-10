@@ -5,6 +5,7 @@ import json
 import codecs
 import unicodedata
 from os.path import splitext
+import time
 
 
 def preprocessing(src):
@@ -203,10 +204,14 @@ def process_input():
             print("Probeer het opnieuw")
     print("Input: " + text)
     print("Versie A")
+    start_time = time.time()
     calculate(text)
+    print("--- %s seconds ---" % (time.time() - start_time))
     print("------------------")
     print("Versie B")
+    start_time = time.time()
     print(detect_language(text))
+    print("--- %s seconds ---" % (time.time() - start_time))
 
     print("")
     print("")
