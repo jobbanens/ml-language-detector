@@ -3,12 +3,20 @@ import os
 import re
 import json
 import codecs
+import unicodedata
 from os.path import splitext
 
 
 def preprocessing(src):
     with io.open(src, 'r', encoding='utf-8', errors='ignore') as temp:
-        return re.sub("[\n]+", ' ', (re.sub("[^A-Za-zÀ-Ÿ\n_ ']+", '', temp.read()).lower()))
+        text = temp.read()
+        # Normalize Unicode characters
+        text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8')
+        # Remove non-letter characters and underscores
+        text = re.sub(r'[^A-Za-zÀ-ÿ ]+', '', text.lower())
+        # Replace multiple spaces with a single space
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
 
 
 def count_len(src):
@@ -78,6 +86,33 @@ def calculate_score(ngrams_input, ngrams_lang, corpus_len, lang_len):
     return score
 
 
+def apply_laplace_smoothing(language, file=0):
+    V = calculate_vocabulary_size('../assets/raw/nld.txt')
+    with open('../assets/json/' + language + '_3.json', 'r') as f:
+        trigram_counts = json.load(f)
+    with open('../assets/json/' + language + '_2.json', 'r') as f:
+        bigram_counts = json.load(f)
+
+    trigram_probs = {}
+    for trigram in trigram_counts:
+        bigram = trigram[:2]
+        count_tri = trigram_counts[trigram]
+        count_bi = bigram_counts[bigram]
+        prob = (count_tri + 1) / (count_bi + V)
+        trigram_probs[trigram] = prob
+    if file == 1:
+        with open('../assets/chances/' + language + '.json', "w", encoding="utf-8") as f:
+            json.dump(trigram_probs, f)
+    return trigram_probs
+
+
+def calculate_vocabulary_size(text_path):
+    with open(text_path, 'r', encoding='utf-8') as f:
+        text = f.read().lower()
+    bigrams = set(zip(text, text[1:]))
+    return len(bigrams)
+
+
 languages = {
     'nld': 'nld.txt',
     'eng': 'eng.txt',
@@ -86,6 +121,25 @@ languages = {
     'ita': 'ita.txt',
     'spa': 'spa.txt',
 }
+
+
+def detect_language(input_text):
+    trigrams = make_ngrams(input_text, 3)
+    language_probabilities = {}
+    for filename in os.listdir('../assets/json/'):
+        if filename.endswith('_3.json'):
+            language = filename.split('_')[0]
+            trigram_probs = apply_laplace_smoothing(language)
+            probability = 1
+            for trigram in trigrams:
+                if trigram in trigram_probs:
+                    probability *= trigram_probs[trigram]
+                else:
+                    probability *= 1e-10  # use a small probability for unseen trigrams
+            language_probabilities[language] = probability
+    return sorted(language_probabilities.items(), key=lambda x: x[1], reverse=True)
+
+
 
 def calculate(text):
     bigrams_input = make_ngrams(text, 2)
@@ -115,6 +169,7 @@ def calculate(text):
             if lang in a:
                 print(f"{lang}: {score} (bi: {a[1]} + tri: {a[2]}")
 
+
 def process_input():
     print("Hoe wil je het algoritme testen?")
     print("0 - Zelf tekst invoeren")
@@ -129,29 +184,35 @@ def process_input():
     print("")
     text = ""
 
-    if selection == 0:
-        text = input()
-    elif selection == 1:
-        text = "Hallo ik ben een man die kaas eet en water drinkt"
-    elif selection == 2:
-        text = "Hello I am a man who eats cheese and drinks water"
-    elif selection == 3:
-        text = "Hallo, ich bin ein Mann, der Käse isst und Wasser trinkt"
-    elif selection == 4:
-        text = "Bonjour je suis un homme qui mange du fromage et boit de l'eau"
-    elif selection == 5:
-        text = "Ciao sono un uomo che mangia formaggio e beve acqua"
-    elif selection == 6:
-        text = "Hola soy un hombre que come queso y bebe agua"
-    if text != "":
-        print("Input: " + text)
-        calculate(text)
-    else:
-        print("Probeer het opnieuw")
+    match selection:
+        case 0:
+            text = input()
+        case 1:
+            text = "Hallo ik ben een man die kaas eet en water drinkt"
+        case 2:
+            text = "Hello I am a man who eats cheese and drinks water"
+        case 3:
+            text = "Hallo, ich bin ein Mann, der Käse isst und Wasser trinkt"
+        case 4:
+            text = "Bonjour je suis un homme qui mange du fromage et boit de l'eau"
+        case 5:
+            text = "Ciao sono un uomo che mangia formaggio e beve acqua"
+        case 6:
+            text = "Hola soy un hombre que come queso y bebe agua"
+        case other:
+            print("Probeer het opnieuw")
+    print("Input: " + text)
+    print("Versie A")
+    calculate(text)
+    print("------------------")
+    print("Versie B")
+    print(detect_language(text))
 
     print("")
     print("")
     process_input()
 
+
+langs = ['eng', 'fra', 'ita', 'nld', 'spa', 'ger']
 
 process_input()
