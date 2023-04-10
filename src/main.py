@@ -74,7 +74,6 @@ def calculate_score(ngrams_input, ngrams_lang, corpus_len, lang_len):
 
     factor = 1 - (lang_len / corpus_len)
 
-    # Calculate the maximum a posteriori (MAP)
     score = overlap_freq_input / total_freq_input * overlap_freq_lang / total_freq_lang * factor
     return score
 
